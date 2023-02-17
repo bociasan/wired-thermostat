@@ -7,9 +7,9 @@
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_AHTX0.h>
 
-#define RELAY_PIN D7
-#define BUTTON_RIGHT_PIN D6
-#define BUTTON_LEFT_PIN D5
+#define RELAY_PIN D6
+#define BUTTON_RIGHT_PIN D8
+#define BUTTON_LEFT_PIN D7
 
 #define DISPLAY_I2C_ADDRESS 0x3c
 #define BMP280_I2C_ADDRESS 0x76

@@ -6,10 +6,14 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_AHTX0.h>
+#include <DHT.h>
 
 #define RELAY_PIN D6
 #define BUTTON_RIGHT_PIN D8
 #define BUTTON_LEFT_PIN D7
+#define DHT22_PIN D5 // Digital pin connected to the DHT sensor
+
+#define DHTTYPE DHT22 // DHT 22  (AM2302), AM2321
 
 #define DISPLAY_I2C_ADDRESS 0x3c
 #define BMP280_I2C_ADDRESS 0x76
@@ -19,6 +23,7 @@
 #define SCREEN_HEIGHT 32 // OLED display height, in pixels
 #define OLED_RESET -1    // Reset pin # (or -1 if sharing Arduino reset pin)
 
+DHT dht(DHT22_PIN, DHTTYPE);
 Adafruit_BMP280 bmp; // I2C
 Adafruit_AHTX0 aht;
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
@@ -66,6 +71,12 @@ bool initAht()
     return true;
 }
 
+bool initDht()
+{
+    dht.begin();
+    return true;
+}
+
 void setup()
 {
     pinMode(RELAY_PIN, OUTPUT);
@@ -80,6 +91,7 @@ void setup()
     initDisplay();
     initBmp();
     initAht();
+    initDht();
 }
 
 void loop()
@@ -101,10 +113,44 @@ void loop()
     display.print(bmp.readPressure() / 100.0F);
     display.println(" hPa");
 
-sensors_event_t humidity, temp;
-  aht.getEvent(&humidity, &temp);// populate temp and humidity objects with fresh data
-  Serial.print("Temperature: "); Serial.print(temp.temperature); Serial.println(" degrees C");
-  Serial.print("Humidity: "); Serial.print(humidity.relative_humidity); Serial.println("% rH");
+    sensors_event_t humidity, temp;
+    aht.getEvent(&humidity, &temp); // populate temp and humidity objects with fresh data
+    Serial.print("Temperature: ");
+    Serial.print(temp.temperature);
+    Serial.println(" degrees C");
+    Serial.print("Humidity: ");
+    Serial.print(humidity.relative_humidity);
+    Serial.println("% rH");
+
+    float h = dht.readHumidity();
+    // Read temperature as Celsius (the default)
+    float t = dht.readTemperature();
+    // Read temperature as Fahrenheit (isFahrenheit = true)
+    float f = dht.readTemperature(true);
+
+    // Check if any reads failed and exit early (to try again).
+    if (isnan(h) || isnan(t) || isnan(f))
+    {
+        Serial.println(F("Failed to read from DHT sensor!"));
+        return;
+    }
+
+    // Compute heat index in Fahrenheit (the default)
+    float hif = dht.computeHeatIndex(f, h);
+    // Compute heat index in Celsius (isFahreheit = false)
+    float hic = dht.computeHeatIndex(t, h, false);
+
+    Serial.print(F("Humidity: "));
+    Serial.print(h);
+    Serial.print(F("%  Temperature: "));
+    Serial.print(t);
+    Serial.print(F("°C "));
+    Serial.print(f);
+    Serial.print(F("°F  Heat index: "));
+    Serial.print(hic);
+    Serial.print(F("°C "));
+    Serial.print(hif);
+    Serial.println(F("°F"));
 
     Serial.println();
     display.display();
